@@ -1,34 +1,28 @@
-#include <zmqpp/zmqpp.hpp>
+#include "ImuDriver/Implementation/ImuRegisters.hpp"
+#include "ImuDriver/Implementation/SimulatedI2c.hpp"
 
-#include <format>
-#include <iostream>
-#include <string>
+using Interface::I2c;
 
 int main(int argc, char *argv[])
 {
-    const std::string endpoint = "tcp://localhost:5555";
+    auto i2c = SimulatedI2c{"tcp://localhost:5555"};
+    const auto slave = I2c::SlaveAddress{0x7F};
 
-    // Initialize the 0MQ context.
-    zmqpp::context context;
-
-    // Generate a push socket.
-    const zmqpp::socket_type type = zmqpp::socket_type::req;
-    zmqpp::socket socket(context, type);
-
-    // Open the connection.
-    std::cout << "Connecting to hello world server…" << std::endl;
-    socket.connect(endpoint);
-    for (int request_nbr = 0; request_nbr < 10; ++request_nbr)
     {
-        // Send a message.
-        std::cout << "Sending Hello " << request_nbr << "…" << std::endl;
-        zmqpp::message message;
-        message << std::format("Hello {}", request_nbr);
-        socket.send(message);
+        auto result = i2c.WriteByte(slave, Register::ACCEL_CONFIG0, 0x05);
+        if (result != I2c::Status::Success)
+        {
+            return 1;
+        }
+    }
 
-        // Receive the response.
-        std::string buffer;
-        socket.receive(buffer);
-        std::cout << "Received World " << request_nbr << std::endl;
-  }
+    {
+        auto result = i2c.ReadByte(slave, Register::INT_STATUS_DRDY);
+        if (result.status != I2c::Status::Success)
+        {
+            return 1;
+        }
+
+        std::cout << std::format("Received byte: 0x{:02x}", result.readByte) << std::endl;
+    }
 }
