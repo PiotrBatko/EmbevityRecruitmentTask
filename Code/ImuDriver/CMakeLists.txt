@@ -26,6 +26,7 @@ target_sources(
         Register.cpp
 
         # Implementation
+        ImuDriver.cpp
         SimulatedI2c.cpp
 )
 
