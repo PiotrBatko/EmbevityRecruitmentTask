@@ -8,17 +8,37 @@ class Registers:
     INT_STATUS_DRDY = 0x39
 
 
+class ImuSimulator:
+    def __init__(self):
+        self.__registers = {
+            Registers.PWR_MGMT0: 0x00,
+            Registers.ACCEL_CONFIG0: 0x06,
+        }
+
+    def read_from_register(self, register: int) -> int:
+        if register in self.__registers:
+            return self.__registers[register]
+        elif register == Registers.INT_STATUS_DRDY:
+            return 0xcd
+        else:
+            return 0xab
+
+    def write_to_register(self, register: int, value: int) -> None:
+        if register in self.__registers:
+            self.__registers[register] = value
+
+        if register == Registers.ACCEL_CONFIG0:
+            print(f"ACCEL_CONFIG0 set to 0x{value:02x}")
+
+
 class I2cSimulator:
     __READ_BYTE = "READ_BYTE"
     __WRITE_BYTE = "WRITE_BYTE"
     __SUCCESS = "SUCCESS"
     __ERROR = "ERROR"
 
-    def __init__(self):
-        self.__registers = {
-            Registers.PWR_MGMT0: 0x00,
-            Registers.ACCEL_CONFIG0: 0x06,
-        }
+    def __init__(self, imu: ImuSimulator):
+        self.__imu = imu
 
     def process(self, message: bytes) -> str:
         command, *content = list(message.decode("utf-8").split())
@@ -28,12 +48,12 @@ class I2cSimulator:
             if command == self.__READ_BYTE:
                 self.__assert_content_has_valid_size(content, 1)
                 register_to_read = int(content[0], 16)
-                return f"0x{self.get_value_of_register(register_to_read):02x}"
+                return f"0x{self.__imu.read_from_register(register_to_read):02x}"
             if command == self.__WRITE_BYTE:
                 self.__assert_content_has_valid_size(content, 2)
                 register_to_write = int(content[0], 16)
                 value_to_write = int(content[1], 16)
-                self.set_value_of_register(register_to_write, value_to_write)
+                self.__imu.write_to_register(register_to_write, value_to_write)
                 return self.__SUCCESS
             else:
                 return self.__prepare_error_message("Unknown Command")
@@ -50,29 +70,13 @@ class I2cSimulator:
     def __prepare_error_message(self, description: str) -> str:
         return f"{self.__ERROR}: {description}"
 
-    def get_value_of_register(self, register: int) -> int:
-        if register in self.__registers:
-            return self.__registers[register]
-        elif register == Registers.INT_STATUS_DRDY:
-            return 0xcd
-        else:
-            return 0xab
-
-    def set_value_of_register(self, register: int, value: int) -> None:
-        if register in self.__registers:
-            self.__registers[register] = value
-
-        if register == Registers.ACCEL_CONFIG0:
-            print(f"ACCEL_CONFIG0 set to 0x{value:02x}")
-
-
 
 def main() -> None:
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind("tcp://*:5555")
 
-    i2c = I2cSimulator()
+    i2c = I2cSimulator(ImuSimulator())
     while True:
         # Wait for next request from client
         message = socket.recv()
