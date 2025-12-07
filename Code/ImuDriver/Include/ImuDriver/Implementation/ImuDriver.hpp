@@ -14,6 +14,7 @@ public:
 
     void Start();
     void Stop();
+    bool IsDataAcquisitionEnabled() const;
 
 private:
     Interface::I2c& m_I2c;

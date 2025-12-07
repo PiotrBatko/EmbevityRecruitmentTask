@@ -26,6 +26,11 @@ void ImuDriver::Stop()
     m_DataAcquisitionThread.join();
 }
 
+bool ImuDriver::IsDataAcquisitionEnabled() const
+{
+    return m_DataAcquisitionThread.joinable();
+}
+
 void ImuDriver::DataAcquisitionThread(const std::stop_token stopToken)
 {
     while (!stopToken.stop_requested())

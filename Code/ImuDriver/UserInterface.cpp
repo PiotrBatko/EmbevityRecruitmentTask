@@ -37,8 +37,14 @@ int UserInterface::RunMainLoop()
     {
         std::cout << std::format("Type one of following options:") << std::endl;
         std::cout << std::endl;
-        std::cout << std::format("{} -- to TURN OFF data acquisition", Command::StopAcquisition) << std::endl;
-        std::cout << std::format("{} -- to TURN ON data acquisition", Command::StartAcquisition) << std::endl;
+        if (m_Imu.IsDataAcquisitionEnabled())
+        {
+            std::cout << std::format("{} -- to TURN OFF data acquisition", Command::StopAcquisition) << std::endl;
+        }
+        else
+        {
+            std::cout << std::format("{} -- to TURN ON data acquisition", Command::StartAcquisition) << std::endl;
+        }
         std::cout << std::format("{} -- to close the application", Command::Exit) << std::endl;
         std::cout << std::endl;
         std::cout << "What to do: " << std::flush;
@@ -48,11 +54,11 @@ int UserInterface::RunMainLoop()
 
         Log::Debug(std::format("Input: \"{}\"", input));
 
-        if (input == Command::StartAcquisition)
+        if (input == Command::StartAcquisition and not m_Imu.IsDataAcquisitionEnabled())
         {
             m_Imu.Start();
         }
-        else if (input == Command::StopAcquisition)
+        else if (input == Command::StopAcquisition and m_Imu.IsDataAcquisitionEnabled())
         {
             m_Imu.Stop();
         }
