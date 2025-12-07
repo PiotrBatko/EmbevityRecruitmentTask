@@ -16,6 +16,7 @@ class I2cSimulator:
 
     def __init__(self):
         self.__registers = {
+            Registers.PWR_MGMT0: 0x00,
             Registers.ACCEL_CONFIG0: 0x06,
         }
 

@@ -31,7 +31,12 @@ UserInterface::Status UserInterface::RunMainLoop()
     std::cout << "tail -f " << std::filesystem::current_path() / Log::FileName << std::endl;
     std::cout << std::endl;
 
-    Log::Info("Application started");
+    if (m_Imu.Initialize() != ImuDriver::Status::Success)
+    {
+        Log::Error("IMU initialization failed");
+        return Status::UnknownError;
+    }
+    Log::Info("IMU initialized");
 
     while (true)
     {
@@ -56,11 +61,21 @@ UserInterface::Status UserInterface::RunMainLoop()
 
         if (input == Command::StartAcquisition and not m_Imu.IsDataAcquisitionEnabled())
         {
-            m_Imu.Start();
+            if (m_Imu.Start() != ImuDriver::Status::Success)
+            {
+                Log::Error("IMU data acquisition start failed");
+                return Status::UnknownError;
+            }
+            Log::Info("IMU data acquisition started");
         }
         else if (input == Command::StopAcquisition and m_Imu.IsDataAcquisitionEnabled())
         {
-            m_Imu.Stop();
+            if (m_Imu.Stop() != ImuDriver::Status::Success)
+            {
+                Log::Error("IMU data acquisition stop failed");
+                return Status::UnknownError;
+            }
+            Log::Info("IMU data acquisition stopped");
         }
         else if (input == Command::Exit)
         {

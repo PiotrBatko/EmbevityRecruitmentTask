@@ -14,4 +14,7 @@ public:
     std::string AsString() const;
 };
 
+// TODO: Increase type safety with separate class for Register::Value.
+using Value = std::uint8_t;
+
 }
