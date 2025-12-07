@@ -22,6 +22,7 @@ target_sources(
         main.cpp
 
         # Common
+        Logger.cpp
         Register.cpp
 
         # Implementation
