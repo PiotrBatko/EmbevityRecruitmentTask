@@ -4,6 +4,7 @@
 
 #include "ImuDriver/Implementation/ImuDriver.hpp"
 
+#include <filesystem>
 #include <format>
 #include <iostream>
 
@@ -26,6 +27,10 @@ UserInterface::UserInterface(ImuDriver& imu)
 
 int UserInterface::RunMainLoop()
 {
+    std::cout << "Run following command in separate terminal to track logs:" << std::endl;
+    std::cout << "tail -f " << std::filesystem::current_path() / Log::FileName << std::endl;
+    std::cout << std::endl;
+
     Log::Info("Application started");
 
     while (true)

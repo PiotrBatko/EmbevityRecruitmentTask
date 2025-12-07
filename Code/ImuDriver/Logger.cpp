@@ -12,7 +12,7 @@ constexpr auto DebugLogsEnabled = false;
 
 void CreateLog(const Message& message)
 {
-    std::ofstream("logs.txt", std::ios::app) << message << std::endl;
+    std::ofstream(FileName, std::ios::app) << message << std::endl;
 }
 
 }
