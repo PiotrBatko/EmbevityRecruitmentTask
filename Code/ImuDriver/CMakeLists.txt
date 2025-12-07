@@ -28,6 +28,9 @@ target_sources(
         # Implementation
         ImuDriver.cpp
         SimulatedI2c.cpp
+
+        # View
+        UserInterface.cpp
 )
 
 target_include_directories(

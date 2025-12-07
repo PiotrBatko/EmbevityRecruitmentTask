@@ -1,6 +1,8 @@
 #include "ImuDriver/Implementation/ImuDriver.hpp"
 #include "ImuDriver/Implementation/SimulatedI2c.hpp"
 
+#include "ImuDriver/View/UserInterface.hpp"
+
 using Interface::I2c;
 
 int main(int argc, char *argv[])
@@ -9,8 +11,7 @@ int main(int argc, char *argv[])
     const auto slave = I2c::SlaveAddress{0x7F};
 
     auto imu = ImuDriver{i2c, slave};
-    imu.Start();
-    while (true)
-    {
-    }
+
+    auto userInterface = View::UserInterface{imu};
+    return userInterface.RunMainLoop();
 }
