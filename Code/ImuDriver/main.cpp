@@ -13,5 +13,5 @@ int main(int argc, char *argv[])
     auto imu = ImuDriver{i2c, slave};
 
     auto userInterface = View::UserInterface{imu};
-    return userInterface.RunMainLoop();
+    return static_cast<int>(userInterface.RunMainLoop());
 }

@@ -25,7 +25,7 @@ UserInterface::UserInterface(ImuDriver& imu)
 {
 }
 
-int UserInterface::RunMainLoop()
+UserInterface::Status UserInterface::RunMainLoop()
 {
     std::cout << "Run following command in separate terminal to track logs:" << std::endl;
     std::cout << "tail -f " << std::filesystem::current_path() / Log::FileName << std::endl;
@@ -75,7 +75,7 @@ int UserInterface::RunMainLoop()
     }
 
     Log::Info("Application closed");
-    return 0;
+    return Status::Success;
 }
 
 }

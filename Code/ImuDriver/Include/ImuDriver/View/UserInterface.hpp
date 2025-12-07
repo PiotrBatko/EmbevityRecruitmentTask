@@ -8,8 +8,14 @@ namespace View
 class UserInterface
 {
 public:
+    enum class Status
+    {
+        Success,
+        UnknownError,
+    };
+
     explicit UserInterface(ImuDriver& imu);
-    int RunMainLoop();
+    Status RunMainLoop();
 
 private:
     ImuDriver& m_Imu;
