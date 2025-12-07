@@ -1,18 +1,11 @@
 #include "ImuDriver/Implementation/SimulatedI2c.hpp"
 
+#include "ImuDriver/Common/Logger.hpp"
+
 #include <format>
 #include <sstream>
 
 using Interface::I2c;
-
-//#define HIDE_DEBUG_LOGS
-#ifndef HIDE_DEBUG_LOGS
-#include <iostream>
-
-#define DEBUG_LOG(message) std::cout << message << std::endl;
-#else
-#define DEBUG_LOG(message) (void) message;
-#endif
 
 namespace Command
 {
@@ -60,11 +53,11 @@ std::string SimulatedI2c::SendAndReceive(const std::string& toBeSent) const
 {
     // Sent the message.
     m_Socket.send(toBeSent);
-    DEBUG_LOG(std::format("    Sent: \"{}\"", toBeSent));
+    Log::Debug(std::format("    Sent: \"{}\"", toBeSent));
 
     // Receive the response.
     std::string response;
     m_Socket.receive(response);
-    DEBUG_LOG(std::format("Received: \"{}\"", response));
+    Log::Debug(std::format("Received: \"{}\"", response));
     return response;
 }
