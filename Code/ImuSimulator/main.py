@@ -1,3 +1,4 @@
+import time
 import traceback
 import zmq
 
@@ -8,18 +9,56 @@ class Registers:
     INT_STATUS_DRDY = 0x39
 
 
+class ImuDataProvider:
+    Time = float
+
+    def __init__(self, output_data_rate: Time):
+        self.__last_query = self.__now()
+        self.__output_data_rate = output_data_rate
+        self.__timepoint_of_last_data_acquisition: ImuDataProvider.Time | None = None
+
+    def is_new_data_ready(self) -> bool:
+        """This mimics the behavior of INT_STATUS_DRDY in real IMU device."""
+
+        timepoint_of_next_data_acquisition = self.__timepoint_of_next_data_acquisition()
+        is_new_data_acquired = timepoint_of_next_data_acquisition < self.__now()
+        if is_new_data_acquired:
+            self.__timepoint_of_last_data_acquisition = timepoint_of_next_data_acquisition
+        return is_new_data_acquired
+
+    def __timepoint_of_next_data_acquisition(self) -> Time:
+        return self.__timepoint_of_last_data_acquisition + self.__output_data_rate
+
+    def enable(self) -> None:
+        self.__timepoint_of_last_data_acquisition = self.__now()
+        print("Data acquisition enabled")
+
+    def disable(self) -> None:
+        self.__timepoint_of_last_data_acquisition = None
+        print("Data acquisition disabled")
+
+    @staticmethod
+    def __now() -> Time:
+        return time.time()
+
+
 class ImuSimulator:
+    ACCEL_MODE_MASK = 0x03
+    ACCEL_MODE_DISABLED = 0x00
+    ACCEL_MODE_LOW_NOISE = 0x03
+
     def __init__(self):
         self.__registers = {
             Registers.PWR_MGMT0: 0x00,
             Registers.ACCEL_CONFIG0: 0x06,
         }
+        self.__data_provider = ImuDataProvider(2.0) # for tests: 2 seconds, 0.5 Hz
 
     def read_from_register(self, register: int) -> int:
         if register in self.__registers:
             return self.__registers[register]
         elif register == Registers.INT_STATUS_DRDY:
-            return 0xcd
+            return 0x01 if self.__data_provider.is_new_data_ready() else 0x00
         else:
             return 0xab
 
@@ -29,6 +68,15 @@ class ImuSimulator:
 
         if register == Registers.ACCEL_CONFIG0:
             print(f"ACCEL_CONFIG0 set to 0x{value:02x}")
+        elif register == Registers.PWR_MGMT0:
+            print(f"PWR_MGMT0 set to 0x{value:02x}")
+            accel_mode_value = value & self.ACCEL_MODE_MASK
+            if accel_mode_value == self.ACCEL_MODE_LOW_NOISE:
+                self.__data_provider.enable()
+            elif accel_mode_value == self.ACCEL_MODE_DISABLED:
+                self.__data_provider.disable()
+            else:
+                raise RuntimeError(f"Unsupported value of ACCEL_MODE (PWR_MGMT0 register) received: 0x{accel_mode_value:02x}")
 
 
 class I2cSimulator:
