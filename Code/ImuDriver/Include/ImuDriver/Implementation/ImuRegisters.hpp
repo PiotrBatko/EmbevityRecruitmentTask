@@ -45,3 +45,10 @@ constexpr auto GYRO_MODE_ENABLED_LOW_NOISE = std::uint8_t{0x03 << GYRO_MODE_OFFS
 
 constexpr auto ACCEL_MODE_DISABLED          = std::uint8_t{0x00 << ACCEL_MODE_OFFSET};
 constexpr auto ACCEL_MODE_ENABLED_LOW_NOISE = std::uint8_t{0x03 << ACCEL_MODE_OFFSET};
+
+// INT_STATUS_DRDY
+constexpr auto DATA_RDY_INT_OFFSET = 0;
+
+constexpr auto DATA_RDY_INT_MASK = std::uint8_t{0x01 << DATA_RDY_INT_OFFSET};
+
+constexpr auto DATA_RDY_INT_DATA_IS_READY = std::uint8_t{0x01 << DATA_RDY_INT_OFFSET};

@@ -11,6 +11,8 @@ class Address
 public:
     std::uint8_t m_Address;
 
+    Address operator++(int);
+
     std::string AsString() const;
 };
 

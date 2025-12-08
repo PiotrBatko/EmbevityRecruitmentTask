@@ -46,6 +46,14 @@ private:
 
     void DataAcquisitionThread(std::stop_token stopToken);
 
+    struct AcquiredData
+    {
+        std::array<std::uint16_t, 3> acceleration;
+        std::array<std::uint16_t, 3> rotation;
+    };
+    std::pair<Status, AcquiredData> ReadAllAcquiredData() const;
+    std::pair<Status, std::uint16_t> ReadSingleAcquiredData(Register::Address& target) const;
+
     Status TurnOnAccelerometerAndGyroscopeInLowNoiseMode();
     Status TurnOffAccelerometerAndGyroscope();
 

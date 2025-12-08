@@ -4,6 +4,12 @@ import zmq
 
 
 class Registers:
+    ACCEL_DATA_X1 = 0x0B
+    ACCEL_DATA_X0 = 0x0C
+    ACCEL_DATA_Y1 = 0x0D
+    ACCEL_DATA_Y0 = 0x0E
+    ACCEL_DATA_Z1 = 0x0F
+    ACCEL_DATA_Z0 = 0x10
     PWR_MGMT0 = 0x1F
     ACCEL_CONFIG0 = 0x21
     INT_STATUS_DRDY = 0x39
@@ -16,6 +22,14 @@ class ImuDataProvider:
         self.__last_query = self.__now()
         self.__output_data_rate = output_data_rate
         self.__timepoint_of_last_data_acquisition: ImuDataProvider.Time | None = None
+        self.__acquired_data = {
+            Registers.ACCEL_DATA_X1: 0xAA,
+            Registers.ACCEL_DATA_X0: 0xBB,
+            Registers.ACCEL_DATA_Y1: 0xCC,
+            Registers.ACCEL_DATA_Y0: 0xDD,
+            Registers.ACCEL_DATA_Z1: 0xEE,
+            Registers.ACCEL_DATA_Z0: 0xFF,
+        }
 
     def is_new_data_ready(self) -> bool:
         """This mimics the behavior of INT_STATUS_DRDY in real IMU device."""
@@ -25,6 +39,9 @@ class ImuDataProvider:
         if is_new_data_acquired:
             self.__timepoint_of_last_data_acquisition = timepoint_of_next_data_acquisition
         return is_new_data_acquired
+
+    def get_acquired_data_for_register(self, register: int) -> int:
+        return self.__acquired_data[register]
 
     def __timepoint_of_next_data_acquisition(self) -> Time:
         return self.__timepoint_of_last_data_acquisition + self.__output_data_rate
@@ -59,6 +76,8 @@ class ImuSimulator:
             return self.__registers[register]
         elif register == Registers.INT_STATUS_DRDY:
             return 0x01 if self.__data_provider.is_new_data_ready() else 0x00
+        elif Registers.ACCEL_DATA_X1 <= register <= Registers.ACCEL_DATA_Z0:
+            return self.__data_provider.get_acquired_data_for_register(register)
         else:
             return 0xab
 

@@ -118,13 +118,98 @@ void ImuDriver::DataAcquisitionThread(const std::stop_token stopToken)
         const auto result = m_I2c.ReadByte(m_SlaveAddress, Register::INT_STATUS_DRDY);
         if (result.status != I2c::Status::Success)
         {
+            Log::Error("Checking if data is acquired failed");
             return;
         }
 
-        Log::Debug(std::format("Received byte: 0x{:02x}", result.readByte));
+        const auto isDataReady = Bits::Read(result.readByte, DATA_RDY_INT_MASK) == DATA_RDY_INT_DATA_IS_READY;
+        if (not isDataReady)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds{400});
+            continue;
+        }
 
-        std::this_thread::sleep_for(std::chrono::seconds{3});
+        const auto [status, acquiredData] = ReadAllAcquiredData();
+        if (status != Status::Success)
+        {
+            Log::Error("Reading acquired data failed");
+            return;
+        }
+
+        Log::Info(
+            std::format(
+                "Received data: ax=0x{:04x}, ay=0x{:04x}, az=0x{:04x}",
+                acquiredData.acceleration[0], acquiredData.acceleration[1], acquiredData.acceleration[2]
+            )
+        );
     }
+}
+
+std::pair<ImuDriver::Status, ImuDriver::AcquiredData> ImuDriver::ReadAllAcquiredData() const
+{
+    auto result = std::pair<ImuDriver::Status, ImuDriver::AcquiredData>{};
+    auto& [status, readData] = result;
+    status = Status::UnknownError;
+
+    auto registerToRead = Register::ACCEL_DATA_X1;
+
+    {
+        const auto [status, singleData] = ReadSingleAcquiredData(registerToRead);
+        if (status != Status::Success)
+        {
+            return result;
+        }
+        readData.acceleration[0] = singleData;
+    }
+
+    {
+        const auto [status, singleData] = ReadSingleAcquiredData(registerToRead);
+        if (status != Status::Success)
+        {
+            return result;
+        }
+        readData.acceleration[1] = singleData;
+    }
+
+    {
+        const auto [status, singleData] = ReadSingleAcquiredData(registerToRead);
+        if (status != Status::Success)
+        {
+            return result;
+        }
+        readData.acceleration[2] = singleData;
+    }
+
+    status = Status::Success;
+    return result;
+}
+
+std::pair<ImuDriver::Status, std::uint16_t> ImuDriver::ReadSingleAcquiredData(Register::Address& target) const
+{
+    auto result = std::pair<Status, std::uint16_t>{};
+    auto& [status, readData] = result;
+    status = Status::UnknownError;
+
+    {
+        const auto readByteResult = m_I2c.ReadByte(m_SlaveAddress, target++);
+        if (readByteResult.status != I2c::Status::Success)
+        {
+            return result;
+        }
+        readData = static_cast<std::uint16_t>(readByteResult.readByte) << 8;
+    }
+
+    {
+        const auto readByteResult = m_I2c.ReadByte(m_SlaveAddress, target++);
+        if (readByteResult.status != I2c::Status::Success)
+        {
+            return result;
+        }
+        readData |= static_cast<std::uint16_t>(readByteResult.readByte) << 0;
+    }
+
+    status = Status::Success;
+    return result;
 }
 
 ImuDriver::Status ImuDriver::TurnOnAccelerometerAndGyroscopeInLowNoiseMode()
