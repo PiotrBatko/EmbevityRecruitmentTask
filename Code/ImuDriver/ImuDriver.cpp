@@ -136,12 +136,8 @@ void ImuDriver::DataAcquisitionThread(const std::stop_token stopToken)
             return;
         }
 
-        Log::Info(
-            std::format(
-                "Received data: ax=0x{:04x}, ay=0x{:04x}, az=0x{:04x}",
-                acquiredData.acceleration[0], acquiredData.acceleration[1], acquiredData.acceleration[2]
-            )
-        );
+        const auto [ax, ay, az] = ConvertToFloat(acquiredData.acceleration);
+        Log::Info(std::format("Received data: ax={: .3f}, ay={: .3f}, az={: .3f}", ax, ay, az));
     }
 }
 
@@ -210,6 +206,22 @@ std::pair<ImuDriver::Status, std::uint16_t> ImuDriver::ReadSingleAcquiredData(Re
 
     status = Status::Success;
     return result;
+}
+
+std::array<float, 3> ImuDriver::ConvertToFloat(const AcquiredData::Accelerations& acquired) const
+{
+    return {
+        ConvertToFloat(acquired[0]),
+        ConvertToFloat(acquired[1]),
+        ConvertToFloat(acquired[2])
+    };
+}
+
+float ImuDriver::ConvertToFloat(const std::uint16_t acquired) const
+{
+    return static_cast<float>(
+        static_cast<std::int16_t>(acquired)
+    ) / 16384;
 }
 
 ImuDriver::Status ImuDriver::TurnOnAccelerometerAndGyroscopeInLowNoiseMode()

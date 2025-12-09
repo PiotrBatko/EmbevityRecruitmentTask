@@ -48,11 +48,16 @@ private:
 
     struct AcquiredData
     {
-        std::array<std::uint16_t, 3> acceleration;
-        std::array<std::uint16_t, 3> rotation;
+        using Accelerations = std::array<std::uint16_t, 3>;
+
+        Accelerations acceleration;
+        // std::array<std::uint16_t, 3> rotation;
     };
     std::pair<Status, AcquiredData> ReadAllAcquiredData() const;
     std::pair<Status, std::uint16_t> ReadSingleAcquiredData(Register::Address& target) const;
+
+    std::array<float, 3> ConvertToFloat(const AcquiredData::Accelerations& acquired) const;
+    float ConvertToFloat(std::uint16_t acquired) const;
 
     Status TurnOnAccelerometerAndGyroscopeInLowNoiseMode();
     Status TurnOffAccelerometerAndGyroscope();
