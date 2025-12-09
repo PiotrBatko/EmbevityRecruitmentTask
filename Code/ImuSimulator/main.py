@@ -104,7 +104,7 @@ class ImuSimulator:
             Registers.ACCEL_CONFIG0: 0x06,
         }
         self.__data_provider = ImuDataProvider(
-            2.0,  # for tests: 2 seconds, 0.5 Hz
+            0.04,  # for tests: 0.04 seconds, 25 Hz
             "../../TestData/ImuLog.csv"
         )
 

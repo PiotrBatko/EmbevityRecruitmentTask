@@ -136,7 +136,7 @@ void ImuDriver::DataAcquisitionThread(const std::stop_token stopToken)
         const auto isDataReady = Bits::Read(result.readByte, DATA_RDY_INT_MASK) == DATA_RDY_INT_DATA_IS_READY;
         if (not isDataReady)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds{400});
+            std::this_thread::sleep_for(std::chrono::milliseconds{1});
             continue;
         }
 
