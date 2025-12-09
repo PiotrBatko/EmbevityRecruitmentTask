@@ -26,6 +26,8 @@ target_sources(
         Register.cpp
 
         # Implementation
+        FreeFallDetector.cpp
+        FreeFallLogger.cpp
         ImuDriver.cpp
         SimulatedI2c.cpp
 
