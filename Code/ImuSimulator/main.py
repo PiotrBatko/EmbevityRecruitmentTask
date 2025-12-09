@@ -1,3 +1,7 @@
+from collections.abc import Iterator
+import csv
+import itertools
+from pathlib import Path
 import time
 import traceback
 import zmq
@@ -24,7 +28,7 @@ class Registers:
 class ImuDataProvider:
     Time = float
 
-    def __init__(self, output_data_rate: Time):
+    def __init__(self, output_data_rate: Time, data_source_path: str | Path):
         self.__last_query = self.__now()
         self.__output_data_rate = output_data_rate
         self.__timepoint_of_last_data_acquisition: ImuDataProvider.Time | None = None
@@ -37,12 +41,36 @@ class ImuDataProvider:
             Registers.ACCEL_DATA_Z0: 0xFF,
         }
 
+        def update_data_in_registers() -> Iterator[None]:
+            with open(data_source_path, "r", encoding="utf-8") as data_source_file:
+                data_source = csv.reader(data_source_file)
+                next(data_source)  # Skip header.
+                for row in itertools.cycle(data_source):
+                    row = [self.__convert_acceleration_to_binary(float(value)) for value in row[:3]]
+                    debug_print(f"New acquired data: {row}")
+                    self.__acquired_data[Registers.ACCEL_DATA_X1] = int(row[0][:2], 16)
+                    self.__acquired_data[Registers.ACCEL_DATA_X0] = int(row[0][2:], 16)
+                    self.__acquired_data[Registers.ACCEL_DATA_Y1] = int(row[1][:2], 16)
+                    self.__acquired_data[Registers.ACCEL_DATA_Y0] = int(row[1][2:], 16)
+                    self.__acquired_data[Registers.ACCEL_DATA_Z1] = int(row[2][:2], 16)
+                    self.__acquired_data[Registers.ACCEL_DATA_Z0] = int(row[2][2:], 16)
+                    yield
+
+        self.__update_data_in_registers_iterator = update_data_in_registers()
+
+    def __convert_acceleration_to_binary(self, value: float) -> str:
+        return f"{(int(value * 16384) & 0xFFFF):04x}"
+
+    def update_data_in_registers(self) -> None:
+        next(self.__update_data_in_registers_iterator)
+
     def is_new_data_ready(self) -> bool:
         """This mimics the behavior of INT_STATUS_DRDY in real IMU device."""
 
         timepoint_of_next_data_acquisition = self.__timepoint_of_next_data_acquisition()
         is_new_data_acquired = timepoint_of_next_data_acquisition < self.__now()
         if is_new_data_acquired:
+            self.update_data_in_registers()
             self.__timepoint_of_last_data_acquisition = timepoint_of_next_data_acquisition
         return is_new_data_acquired
 
@@ -75,7 +103,10 @@ class ImuSimulator:
             Registers.PWR_MGMT0: 0x00,
             Registers.ACCEL_CONFIG0: 0x06,
         }
-        self.__data_provider = ImuDataProvider(2.0) # for tests: 2 seconds, 0.5 Hz
+        self.__data_provider = ImuDataProvider(
+            2.0,  # for tests: 2 seconds, 0.5 Hz
+            "../../TestData/ImuLog.csv"
+        )
 
     def read_from_register(self, register: int) -> int:
         if register in self.__registers:
