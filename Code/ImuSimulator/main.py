@@ -3,6 +3,12 @@ import traceback
 import zmq
 
 
+VERBOSE = False
+def debug_print(*args, **kwargs) -> None:
+    if VERBOSE:
+        print(*args, **kwargs)
+
+
 class Registers:
     ACCEL_DATA_X1 = 0x0B
     ACCEL_DATA_X0 = 0x0C
@@ -109,7 +115,7 @@ class I2cSimulator:
 
     def process(self, message: bytes) -> str:
         command, *content = list(message.decode("utf-8").split())
-        print(f"Received message: [{command}] {content}")
+        debug_print(f"Received message: [{command}] {content}")
 
         try:
             if command == self.__READ_BYTE:
@@ -153,7 +159,7 @@ def main() -> None:
 
         # Send reply back to client
         socket.send(reply.encode("utf-8"))
-        print(f"Replied: {reply}")
+        debug_print(f"Replied: {reply}")
 
 
 if __name__ == '__main__':
