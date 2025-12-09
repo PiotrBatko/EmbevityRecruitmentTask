@@ -47,6 +47,17 @@ ImuDriver::ImuDriver(I2c& i2c, const I2c::SlaveAddress slaveAddress)
 {
 }
 
+void ImuDriver::SubscribeToNewDataAcquired(NewDataAcquiredObserver& observer)
+{
+    if (m_NewDataAcquiredObserver)
+    {
+        Log::Error("Current implementation supports only one subscriber");
+        return;
+    }
+
+    m_NewDataAcquiredObserver = &observer;
+}
+
 ImuDriver::Status ImuDriver::Initialize()
 {
     if (auto status = ConfigureAccelerometer(AccelerometerScale::Scale2G, AccelerometerOutputDataRate::Rate50Hz); status != Status::Success)
@@ -138,6 +149,10 @@ void ImuDriver::DataAcquisitionThread(const std::stop_token stopToken)
 
         const auto [ax, ay, az] = ConvertToFloat(acquiredData.acceleration);
         Log::Info(std::format("Received data: ax={: .3f}, ay={: .3f}, az={: .3f}", ax, ay, az));
+        if (m_NewDataAcquiredObserver)
+        {
+            m_NewDataAcquiredObserver->OnNewDataAcquired(ax, ay, az);
+        }
     }
 }
 
