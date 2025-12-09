@@ -31,6 +31,8 @@ UserInterface::Status UserInterface::RunMainLoop()
     std::cout << "tail -f " << std::filesystem::current_path() / Log::FileName << std::endl;
     std::cout << std::endl;
 
+    std::cout << "Initializing the IMU (please make sure that IMU simulator is turned on)..." << std::endl;
+    std::cout << std::endl;
     if (m_Imu.Initialize() != ImuDriver::Status::Success)
     {
         Log::Error("IMU initialization failed");
