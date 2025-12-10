@@ -2,9 +2,9 @@ from collections.abc import Iterator
 import csv
 import itertools
 from pathlib import Path
+import socket
 import time
 import traceback
-import zmq
 
 
 VERBOSE = False
@@ -176,20 +176,24 @@ class I2cSimulator:
 
 
 def main() -> None:
-    context = zmq.Context()
-    socket = context.socket(zmq.REP)
-    socket.bind("tcp://*:5555")
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("localhost", 5555))
+    s.listen()
+    conn, addr = s.accept()
 
     i2c = I2cSimulator(ImuSimulator())
     while True:
         # Wait for next request from client
-        message = socket.recv()
+        message = conn.recv(1024)[:-1]
+
+        if not message:
+            break
 
         # Process it
         reply = i2c.process(message)
 
         # Send reply back to client
-        socket.send(reply.encode("utf-8"))
+        conn.send(reply.encode("utf-8"))
         debug_print(f"Replied: {reply}")
 
 

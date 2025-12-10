@@ -2,6 +2,11 @@
 
 #include "ImuDriver/Common/Logger.hpp"
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
 #include <format>
 #include <sstream>
 
@@ -17,10 +22,21 @@ constexpr auto Error    =  std::string{"ERROR"};
 }
 
 SimulatedI2c::SimulatedI2c(const std::string& endpoint)
-    : m_Context{}
-    , m_Socket{m_Context, zmqpp::socket_type::req}
+    : m_Socket{socket(AF_INET, SOCK_STREAM, 0)}
 {
-    m_Socket.connect(endpoint);
+    if (m_Socket == -1) throw std::runtime_error{"Error occurred during socket creation"};
+
+    auto hint = sockaddr_in{};
+    hint.sin_family = AF_INET;
+    hint.sin_port = htons(5555);
+    inet_pton(AF_INET, "127.0.0.1", &hint.sin_addr);
+
+    if (connect(m_Socket, (sockaddr*)&hint, sizeof(hint)) == -1) throw std::runtime_error{"Error during connection creation"};
+}
+
+SimulatedI2c::~SimulatedI2c()
+{
+    close(m_Socket);
 }
 
 SimulatedI2c::ReadByteResult SimulatedI2c::ReadByte(SlaveAddress, const Register::Address source) const
@@ -52,12 +68,13 @@ I2c::Status SimulatedI2c::WriteByte(SlaveAddress, Register::Address source, std:
 std::string SimulatedI2c::SendAndReceive(const std::string& toBeSent) const
 {
     // Sent the message.
-    m_Socket.send(toBeSent);
+    if (send(m_Socket, toBeSent.c_str(), toBeSent.size() + 1, 0) == -1) throw std::runtime_error{"Sending error"};
     Log::Debug(std::format("    Sent: \"{}\"", toBeSent));
 
     // Receive the response.
-    std::string response;
-    m_Socket.receive(response);
+    auto response = std::array<char, 256>{};
+    auto bytesReceived = recv(m_Socket, response.data(), response.size(), 0);
+    if (bytesReceived == -1) throw std::runtime_error{"Receiving error"};
     Log::Debug(std::format("Received: \"{}\"", response));
-    return response;
+    return response.data();
 }

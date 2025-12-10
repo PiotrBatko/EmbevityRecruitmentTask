@@ -81,6 +81,7 @@ UserInterface::Status UserInterface::RunMainLoop()
         }
         else if (input == Command::Exit)
         {
+            if (m_Imu.IsDataAcquisitionEnabled()) m_Imu.Stop();
             break;
         }
         else
